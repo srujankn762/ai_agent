@@ -11,5 +11,5 @@ pgvector==0.2.5
 # File handling
 pypdf==4.2.0
 
-django-request-logging==0.7.5
-
+rich
+colorlog
