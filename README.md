@@ -15,7 +15,7 @@
 ### Gemini Integration
 
 * Created a dedicated `GeminiService` to encapsulate all LLM interactions.
-* Used `gemini-1.5-flash` for fast and reliable response generation.
+* Used `gemini-2.5-flash` for fast and reliable response generation.
 * Added system prompts to control tone, accuracy, and domain-specific behavior.
 
 ### Key Design Decisions
