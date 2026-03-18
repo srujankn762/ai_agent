@@ -55,8 +55,7 @@ class UploadDocumentView(APIView):
         chunks = chunk_text(text)
 
         # Step 3: embed + store
-        gemini = GeminiService()
-        store_chunks(chunks, file.name, gemini)
+        store_chunks(chunks, file.name)
 
         return Response({
             "message": "Document processed",

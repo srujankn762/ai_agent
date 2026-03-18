@@ -1,9 +1,10 @@
 from chat.models import DocumentChunk
+from chat.services.gemini_service import GeminiService
 
 
-def store_chunks(chunks, source, gemini_service):
+def store_chunks(chunks, source):
     objects = []
-
+    gemini_service = GeminiService()
     for chunk in chunks:
         embedding = gemini_service.get_embedding(chunk)
 
