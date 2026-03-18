@@ -35,13 +35,26 @@ class RichAPILoggingMiddleware:
         request_id = str(uuid.uuid4())
         process_id = os.getpid()
         thread_id = threading.get_ident()
+        content_type = request.content_type or ""
 
         # -------- Request Body --------
-        try:
-            body = request.body.decode("utf-8")
-            body = json.loads(body) if body else {}
-        except Exception:
-            body = str(request.body)
+        body = None
+
+        if "application/json" in content_type:
+            try:
+                raw_body = request.body.decode("utf-8")
+                body = json.loads(raw_body) if raw_body else {}
+            except Exception:
+                body = "invalid_json"
+        elif "multipart/form-data" in content_type:
+            # Do NOT log file content
+            body = {
+                "type": "multipart/form-data",
+                "files": list(request.FILES.keys()),
+                "fields": list(request.POST.keys())
+            }
+        else:
+            body = f"unsupported_content_type: {content_type}"
 
         body = mask_sensitive_data(body)
 

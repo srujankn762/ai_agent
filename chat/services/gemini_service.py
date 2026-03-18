@@ -31,3 +31,10 @@ class GeminiService:
         response = self.model.generate_content(messages)
 
         return response.text
+
+    def get_embedding(self, text):
+        result = genai.embed_content(
+            model="models/gemini-embedding-001",
+            content=text
+        )
+        return result["embedding"]

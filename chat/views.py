@@ -1,7 +1,10 @@
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+
+from chat.services.embedding_service import store_chunks
+from chat.utils import extract_text_from_pdf
+from chat.utils import chunk_text
 
 from .services.gemini_service import GeminiService
 import logging
@@ -37,3 +40,25 @@ class ChatView(APIView):
             )
 
 
+class UploadDocumentView(APIView):
+
+    def post(self, request):
+        file = request.FILES.get("file")
+
+        if not file:
+            return Response({"error": "File required"}, status=400)
+
+        # Step 1: extract text
+        text = extract_text_from_pdf(file)
+
+        # Step 2: chunk
+        chunks = chunk_text(text)
+
+        # Step 3: embed + store
+        gemini = GeminiService()
+        store_chunks(chunks, file.name, gemini)
+
+        return Response({
+            "message": "Document processed",
+            "chunks_created": len(chunks)
+        })
