@@ -3,6 +3,7 @@ import json
 import threading
 import os
 import uuid
+from datetime import datetime, timezone
 
 from rich.console import Console
 from rich.json import JSON
@@ -29,6 +30,7 @@ class RichAPILoggingMiddleware:
 
     def __call__(self, request):
         start_time = time.time()
+        start_timestamp = datetime.now(timezone.utc).isoformat()
 
         request_id = str(uuid.uuid4())
         process_id = os.getpid()
@@ -48,6 +50,7 @@ class RichAPILoggingMiddleware:
         headers = mask_sensitive_data(headers)
 
         request_log = {
+            "timestamp": start_timestamp,
             "event": "request_received",
             "request_id": request_id,
             "path": request.path,
@@ -65,6 +68,7 @@ class RichAPILoggingMiddleware:
         response = self.get_response(request)
 
         duration_ms = round((time.time() - start_time) * 1000, 2)
+        end_timestamp = datetime.now(timezone.utc).isoformat()
 
         # -------- Response Body --------
         try:
@@ -78,6 +82,7 @@ class RichAPILoggingMiddleware:
         response_body = mask_sensitive_data(response_body)
 
         response_log = {
+            "timestamp": end_timestamp,
             "event": "response_sent",
             "request_id": request_id,
             "path": request.path,
