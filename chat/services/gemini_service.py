@@ -1,5 +1,6 @@
 import google.generativeai as genai
 from django.conf import settings
+from .helpers import SYSTEM_PROMPT
 
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -15,20 +16,10 @@ class GeminiService:
         Core method to interact with Gemini
         """
 
-        system_prompt = """
-        You are a fintech customer support assistant.
-
-        Rules:
-        - Be concise
-        - Be accurate
-        - If unsure, say you don't know
-        - Do not hallucinate
-        """
-
         messages = []
 
         # Add system prompt
-        messages.append({"role": "user", "parts": [system_prompt]})
+        messages.append({"role": "user", "parts": [SYSTEM_PROMPT]})
 
         # Add history if exists
         if chat_history:
