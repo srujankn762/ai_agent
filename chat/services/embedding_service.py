@@ -17,3 +17,4 @@ def store_chunks(chunks, source):
         )
 
     DocumentChunk.objects.bulk_create(objects)
+
