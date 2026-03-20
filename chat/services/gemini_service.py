@@ -1,6 +1,6 @@
 import google.generativeai as genai
 from django.conf import settings
-from .helpers import SYSTEM_PROMPT
+from .prompts import SYSTEM_PROMPT, RAG_PROMPT
 from chat.services.retrieval_service import search_similar_chunks
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -42,22 +42,13 @@ class GeminiService:
 
         # Step 3: Build context
         context = "\n\n".join([chunk.content for chunk in chunks])
-
         # Step 4: Create prompt
-        prompt = f"""
-        Answer the question ONLY using the context below.
-
-        Context:
-        {context}
-
-        Question:
-        {user_message}
-        """
+        prompt = RAG_PROMPT.format(context=context, user_message=user_message)
 
         # Step 5: Generate response
         response = self.model.generate_content(prompt)
-
-        return response.text
+        sources = list(set([chunk.source for chunk in chunks]))
+        return response.text, sources
 
     def get_embedding(self, text):
         result = genai.embed_content(

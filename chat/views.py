@@ -25,11 +25,13 @@ class ChatView(APIView):
         gemini = GeminiService()
 
         try:
-            reply = gemini.generate_rag_response(user_message)
+            # reply = gemini.generate_response(user_message) # Method1: Direct LLM call
+            reply, sources = gemini.generate_rag_response(user_message) #Method2: Generate Context (RAG) and do LLM call
 
             return Response({
                 "user_message": user_message,
-                "reply": reply
+                "reply": reply,
+                "sources": sources
             })
 
         except Exception as e:
