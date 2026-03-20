@@ -47,8 +47,7 @@ class GeminiService:
 
         # Step 5: Generate response
         response = self.model.generate_content(prompt)
-        sources = list(set([chunk.source for chunk in chunks]))
-        return response.text, sources
+        return response.text
 
     def get_embedding(self, text):
         result = genai.embed_content(

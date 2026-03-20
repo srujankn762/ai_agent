@@ -7,6 +7,7 @@ from chat.utils import extract_text_from_pdf, extract_text_from_url
 from chat.utils import chunk_text
 import hashlib
 
+from .services.agent_service import AgentService
 from .services.gemini_service import GeminiService
 import logging
 logger = logging.getLogger(__name__)
@@ -23,16 +24,16 @@ class ChatView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        gemini = GeminiService()
+        # gemini = GeminiService()
+        agent = AgentService()
 
         try:
             # reply = gemini.generate_response(user_message) # Method1: Direct LLM call
-            reply, sources = gemini.generate_rag_response(user_message) #Method2: Generate Context (RAG) and do LLM call
-
+            # reply = gemini.generate_rag_response(user_message) #Method2: Generate Context (RAG) and do LLM call
+            reply = agent.decide_and_act(user_message)
             return Response({
                 "user_message": user_message,
-                "reply": reply,
-                "sources": sources
+                "reply": reply
             })
 
         except Exception as e:

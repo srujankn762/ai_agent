@@ -11,7 +11,6 @@ def store_chunks(chunks, source, file_hash=None):
     gemini_service = GeminiService()
     for chunk in chunks:
         embedding = gemini_service.get_embedding(chunk)
-
         objects.append(
             DocumentChunk(
                 content=chunk,

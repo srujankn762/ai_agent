@@ -17,3 +17,20 @@ RAG_PROMPT = """
         Question:
         {user_message}
         """
+
+DECISION_PROMPT = """
+        You are an AI agent.
+
+        Decide the action:
+        - If question is about user data → call API
+        - If question is about documents → use search_documents
+        - Otherwise → answer directly
+
+        Return ONLY one word:
+        - "API"
+        - "RAG"
+        - "DIRECT"
+
+        Question:
+        {user_message}
+        """
