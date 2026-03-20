@@ -25,7 +25,7 @@ class ChatView(APIView):
         gemini = GeminiService()
 
         try:
-            reply = gemini.generate_response(user_message)
+            reply = gemini.generate_rag_response(user_message)
 
             return Response({
                 "user_message": user_message,
