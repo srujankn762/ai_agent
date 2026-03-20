@@ -22,4 +22,4 @@ def store_chunks(chunks, source, file_hash=None):
         )
 
     DocumentChunk.objects.bulk_create(objects)
-    return "Document processed"
+    return "Success"

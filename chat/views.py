@@ -88,10 +88,10 @@ class UploadURLView(APIView):
         chunks = chunk_text(text)
 
         # Step 3: Embed + store
-        store_chunks(chunks, url)
+        message = store_chunks(chunks, url)
 
 
         return Response({
-            "message": "URL processed",
+            "message": message,
             "chunks_created": len(chunks)
         })
