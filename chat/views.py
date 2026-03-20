@@ -3,8 +3,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from chat.services.embedding_service import store_chunks
-from chat.utils import extract_text_from_pdf
+from chat.utils import extract_text_from_pdf, extract_text_from_url
 from chat.utils import chunk_text
+import hashlib
 
 from .services.gemini_service import GeminiService
 import logging
@@ -50,16 +51,47 @@ class UploadDocumentView(APIView):
         if not file:
             return Response({"error": "File required"}, status=400)
 
+        file_bytes = file.read()
+        file_hash = hashlib.sha256(file_bytes).hexdigest()
+
+        file.seek(0)  # Reset pointer, Python reads the file and moves the internal cursor to the end.
+                      # So if you try to read it again later for PDF extraction
+
         # Step 1: extract text
         text = extract_text_from_pdf(file)
 
         # Step 2: chunk
         chunks = chunk_text(text)
 
+
         # Step 3: embed + store
-        store_chunks(chunks, file.name)
+        message = store_chunks(chunks, file.name, file_hash)
 
         return Response({
-            "message": "Document processed",
+            "message": message,
+            "chunks_created": len(chunks)
+        })
+
+
+class UploadURLView(APIView):
+
+    def post(self, request):
+        url = request.data.get("url")
+
+        if not url:
+            return Response({"error": "URL required"}, status=400)
+
+        # Step 1: Extract
+        text = extract_text_from_url(url)
+
+        # Step 2: Chunk
+        chunks = chunk_text(text)
+
+        # Step 3: Embed + store
+        store_chunks(chunks, url)
+
+
+        return Response({
+            "message": "URL processed",
             "chunks_created": len(chunks)
         })

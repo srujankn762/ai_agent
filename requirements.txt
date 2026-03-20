@@ -11,5 +11,7 @@ pgvector==0.2.5
 # File handling
 pypdf==4.2.0
 
-rich
-colorlog
+rich==14.3.3
+colorlog==6.10.1
+bs4==0.0.2
+requests==2.32.5

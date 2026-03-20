@@ -1,4 +1,7 @@
 from pypdf import PdfReader
+import requests
+from bs4 import BeautifulSoup
+
 
 
 def extract_text_from_pdf(file):
@@ -20,3 +23,21 @@ def chunk_text(text, chunk_size=500, overlap=50):
         start += chunk_size - overlap
 
     return chunks
+
+
+
+def extract_text_from_url(url):
+    try:
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Remove scripts/styles
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+
+        text = soup.get_text(separator=" ")
+
+        return text.strip()
+
+    except Exception as e:
+        return ""
