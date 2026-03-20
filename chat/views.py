@@ -55,7 +55,7 @@ class UploadDocumentView(APIView):
         file_hash = hashlib.sha256(file_bytes).hexdigest()
 
         file.seek(0)  # Reset pointer, Python reads the file and moves the internal cursor to the end.
-                      # So if you try to read it again later for PDF extraction
+                      # So if you try to read it again later for PDF extraction, it has to begin from the start
 
         # Step 1: extract text
         text = extract_text_from_pdf(file)
