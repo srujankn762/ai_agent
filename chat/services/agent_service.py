@@ -1,7 +1,8 @@
 from chat.services.gemini_service import GeminiService
 from chat.services.tools import get_wallet_balance, search_documents
 from .prompts import DECISION_PROMPT
-
+import logging
+logger = logging.getLogger(__name__)
 
 class AgentService:
 
@@ -14,12 +15,11 @@ class AgentService:
         decision_prompt = DECISION_PROMPT.format(user_message=user_message)
 
         decision = self.gemini.model.generate_content(decision_prompt).text.strip()
-
+        logger.info(f"Decision taken -> {decision}")
         # Step 2: Execute decision
 
         if decision == "API":
             result = get_wallet_balance(user_id=1)
-
             return f"Your balance is {result['balance']} {result['currency']}"
 
         elif decision == "RAG":

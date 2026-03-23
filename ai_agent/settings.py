@@ -158,8 +158,17 @@ LOGGING = {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
+        },
+        "chat": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
         }
-    }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
 }
 
 DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
