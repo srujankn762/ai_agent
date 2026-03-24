@@ -2,13 +2,13 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from chat.services.embedding_service import store_chunks
+from chat.services.embedding_service import is_file_already_processed, is_url_already_processed
+from chat.tasks import store_chunks
 from chat.utils import extract_text_from_pdf, extract_text_from_url
 from chat.utils import chunk_text
 import hashlib
 
 from .services.agent_service import AgentService
-from .services.gemini_service import GeminiService
 import logging
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,12 @@ class UploadDocumentView(APIView):
         file_bytes = file.read()
         file_hash = hashlib.sha256(file_bytes).hexdigest()
 
+        if is_file_already_processed(file_hash):
+            return Response({
+                "message": "File already processed",
+                "chunks_created": 0,
+            })
+
         file.seek(0)  # Reset pointer, Python reads the file and moves the internal cursor to the end.
                       # So if you try to read it again later for PDF extraction, it has to begin from the start
 
@@ -64,13 +70,13 @@ class UploadDocumentView(APIView):
         # Step 2: chunk
         chunks = chunk_text(text)
 
-
-        # Step 3: embed + store
-        message = store_chunks(chunks, file.name, file_hash)
+        # Step 3: enqueue embed + store
+        task = store_chunks.delay(chunks, file.name, file_hash)
 
         return Response({
-            "message": message,
-            "chunks_created": len(chunks)
+            "message": "Chunks queued for processing",
+            "chunks_created": len(chunks),
+            "task_id": task.id,
         })
 
 
@@ -82,17 +88,23 @@ class UploadURLView(APIView):
         if not url:
             return Response({"error": "URL required"}, status=400)
 
+        if is_url_already_processed(url):
+            return Response({
+                "message": "Url already processed",
+                "chunks_created": 0,
+            })
         # Step 1: Extract
         text = extract_text_from_url(url)
 
         # Step 2: Chunk
         chunks = chunk_text(text)
 
-        # Step 3: Embed + store
-        message = store_chunks(chunks, url)
+        # Step 3: enqueue embed + store
+        task = store_chunks.delay(chunks, url)
 
 
         return Response({
-            "message": message,
-            "chunks_created": len(chunks)
+            "message": "Chunks queued for processing",
+            "chunks_created": len(chunks),
+            "task_id": task.id,
         })

@@ -19,18 +19,22 @@ RAG_PROMPT = """
         """
 
 DECISION_PROMPT = """
-        You are an AI agent.
-
-        Decide the action:
-        - If question is about user data → call API
-        - If question is about documents → use search_documents
-        - Otherwise → answer directly
-
-        Return ONLY one word:
-        - "API"
-        - "RAG"
-        - "DIRECT"
-
-        Question:
-        {user_message}
-        """
+                    You are an AI agent.
+                    
+                    You have access to:
+                    1. User-uploaded documents (PDFs)
+                    2. Website content ingested from URLs
+                    
+                    Decide the action:
+                    - If question can be answered using uploaded documents or ingested website content → use RAG
+                    - If question is about user-specific data (like balance) → call API
+                    - Otherwise → answer directly
+                    
+                    Return ONLY one word:
+                    - "API"
+                    - "RAG"
+                    - "DIRECT"
+                    
+                    Question:
+                    {user_message}
+                """

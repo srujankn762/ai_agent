@@ -2,11 +2,14 @@ from chat.models import DocumentChunk
 from chat.services.gemini_service import GeminiService
 
 
-def store_chunks(chunks, source, file_hash=None):
-    if file_hash:
-        if DocumentChunk.objects.filter(file_hash=file_hash).exists():
-            return "File already processed"
+def is_file_already_processed(file_hash):
+    return DocumentChunk.objects.filter(file_hash=file_hash).exists()
 
+def is_url_already_processed(source):
+    return DocumentChunk.objects.filter(source=source).exists()
+
+
+def _store_chunks(chunks, source, file_hash=None):
     objects = []
     gemini_service = GeminiService()
     for chunk in chunks:
@@ -16,7 +19,7 @@ def store_chunks(chunks, source, file_hash=None):
                 content=chunk,
                 embedding=embedding,
                 source=source,
-                file_hash=file_hash
+                file_hash=file_hash,
             )
         )
 
