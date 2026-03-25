@@ -21,6 +21,7 @@ class UploadLog(models.Model):
 
     upload_id = models.CharField(max_length=36, unique=True)
     task_id = models.CharField(max_length=255, null=True, blank=True)
+    attempt_number = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
