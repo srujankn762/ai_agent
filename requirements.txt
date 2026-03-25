@@ -16,3 +16,4 @@ colorlog==6.10.1
 bs4==0.0.2
 requests==2.32.5
 celery==5.4.0
+django-filter==24.3
