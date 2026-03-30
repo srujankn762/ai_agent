@@ -1,9 +1,13 @@
-from chat.models import DocumentChunk
+from chat.models import DocumentChunk, UploadLog
 from chat.services.gemini_service import GeminiService
 
 
 def is_file_already_processed(file_hash):
-    return DocumentChunk.objects.filter(file_hash=file_hash).exists()
+    return UploadLog.objects.filter(file_hash=file_hash,
+                                    status__in=[UploadLog.Status.SUCCESS,
+                                                UploadLog.Status.PROCESSING]).exists() or DocumentChunk.objects.filter(
+                                                file_hash=file_hash)
+
 
 def is_url_already_processed(source):
     return DocumentChunk.objects.filter(source=source).exists()

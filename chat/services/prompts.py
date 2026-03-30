@@ -1,5 +1,4 @@
 SYSTEM_PROMPT = """
-You are a fintech customer support assistant.
 
 Rules:
 - Be concise
