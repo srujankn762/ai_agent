@@ -1,12 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+from uuid import uuid4
 
 from chat.services.embedding_service import is_file_already_processed, is_url_already_processed
 from chat.tasks import store_chunks
 from chat.utils import extract_text_from_pdf, extract_text_from_url
 from chat.utils import chunk_text
 import hashlib
+from chat.models import UploadLog
 
 from .services.agent_service import AgentService
 import logging
@@ -50,34 +52,66 @@ class UploadDocumentView(APIView):
         file = request.FILES.get("file")
 
         if not file:
-            return Response({"error": "File required"}, status=400)
+            return Response({"error": "File required"}, status=status.HTTP_400_BAD_REQUEST)
 
         file_bytes = file.read()
         file_hash = hashlib.sha256(file_bytes).hexdigest()
+        upload_log = UploadLog(
+            upload_id=str(uuid4()),
+            file_hash=file_hash,
+        )
 
         if is_file_already_processed(file_hash):
-            return Response({
-                "message": "File already processed",
-                "chunks_created": 0,
-            })
+            upload_log.status = UploadLog.Status.FAILURE
+            upload_log.message = UploadLog.Message.FILE_ALREADY_PROCESSED
+            upload_log.save()
+            return Response(
+                {
+                    "status": UploadLog.Status.FAILURE.label,
+                    "message": UploadLog.Message.FILE_ALREADY_PROCESSED,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        file.seek(0)  # Reset pointer, Python reads the file and moves the internal cursor to the end.
-                      # So if you try to read it again later for PDF extraction, it has to begin from the start
+        upload_log.status = UploadLog.Status.PROCESSING
+        upload_log.message = UploadLog.Message.FILE_SUBMITTED_FOR_PROCESSING
+        upload_log.save()
 
-        # Step 1: extract text
-        text = extract_text_from_pdf(file)
+        try:
+            file.seek(0)
+            # Step 1: extract text
+            text = extract_text_from_pdf(file)
 
-        # Step 2: chunk
-        chunks = chunk_text(text)
+            # Step 2: chunk
+            chunks = chunk_text(text)
 
-        # Step 3: enqueue embed + store
-        task = store_chunks.delay(chunks, file.name, file_hash)
+            # Step 3: enqueue embed + store\
+            task = store_chunks.delay(chunks, file.name, file_hash, upload_log.upload_id)
+            upload_log.task_id = task.id
+            upload_log.save()
+        except Exception as e:
+            upload_log.status = UploadLog.Status.FAILURE
+            upload_log.message = str(e)
+            upload_log.save()
+            logger.error(f"File upload processing failed due to: {e}")
+            return Response(
+                {
+                    "status": UploadLog.Status.FAILURE.label,
+                    "message": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        return Response({
-            "message": "Chunks queued for processing",
-            "chunks_created": len(chunks),
-            "task_id": task.id,
-        })
+        return Response(
+            {
+                "status": "processing",
+                "message": UploadLog.Message.FILE_SUBMITTED_FOR_PROCESSING,
+                "chunks_created": len(chunks),
+                "task_id": task.id,
+                "upload_id": upload_log.upload_id,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class UploadURLView(APIView):
@@ -90,7 +124,7 @@ class UploadURLView(APIView):
 
         if is_url_already_processed(url):
             return Response({
-                "message": "Url already processed",
+                "message": UploadLog.Message.URL_ALREADY_PROCESSED,
                 "chunks_created": 0,
             })
         # Step 1: Extract
@@ -104,7 +138,7 @@ class UploadURLView(APIView):
 
 
         return Response({
-            "message": "Chunks queued for processing",
+            "message": UploadLog.Message.CHUNKS_QUEUED_FOR_PROCESSING,
             "chunks_created": len(chunks),
             "task_id": task.id,
         })
