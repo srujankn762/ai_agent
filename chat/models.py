@@ -19,6 +19,12 @@ class UploadLog(models.Model):
         SUCCESS = "SUCCESS", "Success"
         FAILURE = "FAILURE", "Failure"
 
+    class Message:
+        FILE_ALREADY_PROCESSED = "File was already processed (or) is waiting in the queue"
+        FILE_SUBMITTED_FOR_PROCESSING = "File is submitted for processing"
+        URL_ALREADY_PROCESSED = "Url already processed"
+        CHUNKS_QUEUED_FOR_PROCESSING = "Chunks queued for processing"
+
     upload_id = models.CharField(max_length=36, unique=True)
     task_id = models.CharField(max_length=255, null=True, blank=True)
     attempt_number = models.PositiveIntegerField(default=0)

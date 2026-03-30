@@ -52,7 +52,7 @@ class UploadDocumentView(APIView):
         file = request.FILES.get("file")
 
         if not file:
-            return Response({"error": "File required"}, status=400)
+            return Response({"error": "File required"}, status=status.HTTP_400_BAD_REQUEST)
 
         file_bytes = file.read()
         file_hash = hashlib.sha256(file_bytes).hexdigest()
@@ -63,18 +63,18 @@ class UploadDocumentView(APIView):
 
         if is_file_already_processed(file_hash):
             upload_log.status = UploadLog.Status.FAILURE
-            upload_log.message = "File was already processed (or) is waiting in the queue"
+            upload_log.message = UploadLog.Message.FILE_ALREADY_PROCESSED
             upload_log.save()
             return Response(
                 {
                     "status": UploadLog.Status.FAILURE.label,
-                    "message": "File was already processed (or) is waiting in the queue",
+                    "message": UploadLog.Message.FILE_ALREADY_PROCESSED,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         upload_log.status = UploadLog.Status.PROCESSING
-        upload_log.message = "File is submitted for processing"
+        upload_log.message = UploadLog.Message.FILE_SUBMITTED_FOR_PROCESSING
         upload_log.save()
 
         try:
@@ -105,7 +105,7 @@ class UploadDocumentView(APIView):
         return Response(
             {
                 "status": "processing",
-                "message": "File is submitted for processing",
+                "message": UploadLog.Message.FILE_SUBMITTED_FOR_PROCESSING,
                 "chunks_created": len(chunks),
                 "task_id": task.id,
                 "upload_id": upload_log.upload_id,
@@ -124,7 +124,7 @@ class UploadURLView(APIView):
 
         if is_url_already_processed(url):
             return Response({
-                "message": "Url already processed",
+                "message": UploadLog.Message.URL_ALREADY_PROCESSED,
                 "chunks_created": 0,
             })
         # Step 1: Extract
@@ -138,7 +138,7 @@ class UploadURLView(APIView):
 
 
         return Response({
-            "message": "Chunks queued for processing",
+            "message": UploadLog.Message.CHUNKS_QUEUED_FOR_PROCESSING,
             "chunks_created": len(chunks),
             "task_id": task.id,
         })
