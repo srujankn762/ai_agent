@@ -1,8 +1,13 @@
-from rest_framework.views import APIView
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 from uuid import uuid4
 
+from chat.serializers import UploadLogSerializer
 from chat.services.embedding_service import is_file_already_processed, is_url_already_processed
 from chat.tasks import store_chunks
 from chat.utils import extract_text_from_pdf, extract_text_from_url
@@ -13,6 +18,10 @@ from chat.models import UploadLog
 from .services.agent_service import AgentService
 import logging
 logger = logging.getLogger(__name__)
+
+
+class UploadLogPagination(PageNumberPagination):
+    page_size = 10
 
 
 class ChatView(APIView):
@@ -142,3 +151,13 @@ class UploadURLView(APIView):
             "chunks_created": len(chunks),
             "task_id": task.id,
         })
+
+
+class UploadLogViewSet(ReadOnlyModelViewSet):
+    serializer_class = UploadLogSerializer
+    queryset = UploadLog.objects.all().order_by("-last_updated")
+    pagination_class = UploadLogPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["status", "upload_id", "task_id", "file_hash"]
+    ordering_fields = ["last_updated"]
+    ordering = ["-last_updated"]
