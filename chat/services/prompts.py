@@ -40,3 +40,21 @@ DECISION_PROMPT = """
                     Question:
                     {user_message}
                 """
+
+EMAIL_CONTENT_PROMPT = """
+You create professional email drafts.
+
+Given the user's request below, generate a JSON object with:
+- "subject": a concise subject line
+- "body": a professional email body
+
+Requirements:
+- Keep the tone polite and professional.
+- Infer the purpose from the request.
+- If the request is for sick leave, the subject should be "Requesting for Sick Leave".
+- The body should be plain text and ready to send.
+- Return ONLY valid JSON. Do not wrap it in markdown.
+
+User request:
+{user_message}
+"""

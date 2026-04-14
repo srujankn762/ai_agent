@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from uuid import uuid4
 
-from chat.serializers import UploadLogSerializer
+from chat.serializers import ChatRequestSerializer, UploadLogSerializer
 from chat.services.embedding_service import is_file_already_processed, is_url_already_processed
 from chat.tasks import store_chunks
 from chat.utils import extract_text_from_pdf, extract_text_from_url
@@ -27,13 +27,10 @@ class UploadLogPagination(PageNumberPagination):
 class ChatView(APIView):
 
     def post(self, request):
-        user_message = request.data.get("message")
-
-        if not user_message:
-            return Response(
-                {"error": "Message is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = ChatRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_message = serializer.validated_data["message"]
+        recipient = serializer.validated_data.get("recipient")
 
         # gemini = GeminiService()
         agent = AgentService()
@@ -41,7 +38,7 @@ class ChatView(APIView):
         try:
             # reply = gemini.generate_response(user_message) # Method1: Direct LLM call
             # reply = gemini.generate_rag_response(user_message) #Method2: Generate Context (RAG) and do LLM call
-            reply = agent.decide_and_act(user_message)
+            reply = agent.decide_and_act(user_message, recipient=recipient)
             return Response({
                 "user_message": user_message,
                 "reply": reply
