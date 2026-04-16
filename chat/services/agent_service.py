@@ -1,5 +1,5 @@
 from chat.services.gemini_service import GeminiService
-from chat.services.tools import get_wallet_balance, search_documents
+from chat.services.tools import get_wallet_balance, search_documents, send_contextual_email
 from .prompts import DECISION_PROMPT
 import logging
 logger = logging.getLogger(__name__)
@@ -9,7 +9,7 @@ class AgentService:
     def __init__(self):
         self.gemini = GeminiService()
 
-    def decide_and_act(self, user_message):
+    def decide_and_act(self, user_message, recipient=None):
 
         # Step 1: Ask LLM what to do
         decision_prompt = DECISION_PROMPT.format(user_message=user_message)
@@ -23,7 +23,17 @@ class AgentService:
             return f"Your balance is {result['balance']} {result['currency']}"
 
         elif decision == "RAG":
-            return search_documents(user_message, self.gemini)
+            return search_documents(user_message, self.gemini.generate_rag_response)
+
+        elif decision == "EMAIL":
+            context_generator = self.gemini.model.generate_content
+            result = send_contextual_email(
+                user_message=user_message,
+                content_generator=context_generator,
+                recipient=recipient,
+            )
+            return result["message"]
 
         else:
+            #fallback option
             return self.gemini.generate_response(user_message)
