@@ -30,7 +30,7 @@ class ChatView(APIView):
         serializer = ChatRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_message = serializer.validated_data["message"]
-        recipient = serializer.validated_data.get("recipient")
+        recipients = serializer.validated_data.get("recipients")
 
         # gemini = GeminiService()
         agent = AgentService()
@@ -38,7 +38,8 @@ class ChatView(APIView):
         try:
             # reply = gemini.generate_response(user_message) # Method1: Direct LLM call
             # reply = gemini.generate_rag_response(user_message) #Method2: Generate Context (RAG) and do LLM call
-            reply = agent.decide_and_act(user_message, recipient=recipient)
+            # Method 3: Give the decision point to LLM and let the agent execute the task accordingly
+            reply = agent.decide_and_act(user_message, recipients=recipients)
             return Response({
                 "user_message": user_message,
                 "reply": reply

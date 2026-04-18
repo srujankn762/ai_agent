@@ -1,10 +1,30 @@
 import json
 import re
 
-from django.core.mail import EmailMessage
 from django.core.exceptions import ImproperlyConfigured
 
 from chat.services.prompts import EMAIL_CONTENT_PROMPT
+from chat.tasks import send_email_task
+
+
+class QueuedEmailMessage:
+    def __init__(self, subject, body, to):
+        self.subject = subject
+        self.body = body
+        self.to = to or []
+
+    def send(self, fail_silently=False):
+        if not self.to:
+            if fail_silently:
+                return 0
+            raise ValueError("Recipient email is required to send an email")
+
+        send_email_task.delay(
+            subject=self.subject,
+            body=self.body,
+            recipients=self.to,
+        )
+        return "email will be sent"
 
 
 def get_wallet_balance(user_id):
@@ -24,11 +44,20 @@ EMAIL_REGEX = r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})"
 
 
 
-def extract_email_recipient(user_message):
-    match = re.search(EMAIL_REGEX, user_message or "")
-    if match:
-        return match.group(1)
-    return None
+def extract_email_recipients(user_message):
+    return list(dict.fromkeys(re.findall(EMAIL_REGEX, user_message or "")))
+
+
+def normalize_recipients(recipients=None, user_message=None):
+    if recipients is None:
+        return extract_email_recipients(user_message)
+
+    if isinstance(recipients, str):
+        recipients = [email.strip() for email in recipients.split(",") if email.strip()]
+    else:
+        recipients = [email for email in recipients if email]
+
+    return list(dict.fromkeys(recipients))
 
 
 def build_email_content(user_message, content_generator):
@@ -49,26 +78,26 @@ def build_email_content(user_message, content_generator):
     }
 
 
-def send_contextual_email(user_message, content_generator, recipient=None):
-    resolved_recipient = recipient or extract_email_recipient(user_message)
+def send_contextual_email(user_message, content_generator, recipients=None):
+    resolved_recipients = normalize_recipients(recipients=recipients, user_message=user_message)
 
-    if not resolved_recipient:
+    if not resolved_recipients:
         raise ValueError("Recipient email is required to send an email")
 
     email_content = build_email_content(user_message, content_generator)
 
     try:
-        email = EmailMessage(
+        email = QueuedEmailMessage(
             subject=email_content["subject"],
             body=email_content["body"],
-            to=[resolved_recipient],
+            to=resolved_recipients,
         )
-        email.send(fail_silently=False)
+        message = email.send(fail_silently=False)
     except ImproperlyConfigured as exc:
         raise ImproperlyConfigured("Email settings are not configured correctly") from exc
 
     return {
-        "recipient": resolved_recipient,
+        "recipient": resolved_recipients,
         "subject": email_content["subject"],
-        "message": f"Email sent successfully to {resolved_recipient} with subject '{email_content['subject']}'",
+        "message": message,
     }
