@@ -1,7 +1,9 @@
 from celery import shared_task
+from django.core.mail import EmailMessage
 
 from chat.models import UploadLog
 from chat.services.embedding_service import _store_chunks
+
 
 @shared_task(bind=True, max_retries=3)
 def store_chunks(self, chunks, source, file_hash=None, upload_id=None):
@@ -25,4 +27,21 @@ def store_chunks(self, chunks, source, file_hash=None, upload_id=None):
                 attempt_number=attempt_number,
                 task_id=self.request.id,
             )
+        raise self.retry(exc=e, countdown=5)
+
+
+@shared_task(bind=True, max_retries=3)
+def send_email_task(self, subject, body, recipients):
+    try:
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            to=recipients,
+        )
+        email.send(fail_silently=False)
+        return {
+            "recipients": recipients,
+            "status": "sent",
+        }
+    except Exception as e:
         raise self.retry(exc=e, countdown=5)

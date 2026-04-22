@@ -9,7 +9,7 @@ class AgentService:
     def __init__(self):
         self.gemini = GeminiService()
 
-    def decide_and_act(self, user_message, recipient=None):
+    def decide_and_act(self, user_message, recipients=None):
 
         # Step 1: Ask LLM what to do
         decision_prompt = DECISION_PROMPT.format(user_message=user_message)
@@ -30,7 +30,7 @@ class AgentService:
             result = send_contextual_email(
                 user_message=user_message,
                 content_generator=context_generator,
-                recipient=recipient,
+                recipients=recipients,
             )
             return result["message"]
 
