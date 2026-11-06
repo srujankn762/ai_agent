@@ -1,11 +1,16 @@
+from django.db import transaction
+
 from chat.models import DocumentChunk, UploadLog
 from chat.services.gemini_service import GeminiService
+
+_processed_batches = []
 
 
 def is_file_already_processed(file_hash):
     return UploadLog.objects.filter(file_hash=file_hash,
                                     status__in=[UploadLog.Status.SUCCESS,
-                                                UploadLog.Status.PROCESSING]).exists() or DocumentChunk.objects.filter(
+                                                UploadLog.Status.PROCESSING,
+                                                UploadLog.Status.FAILURE]).exists() or DocumentChunk.objects.filter(
                                                 file_hash=file_hash)
 
 
@@ -27,5 +32,8 @@ def _store_chunks(chunks, source, file_hash=None):
             )
         )
 
-    DocumentChunk.objects.bulk_create(objects)
+    with transaction.atomic():
+        DocumentChunk.objects.bulk_create(objects)
+
+    _processed_batches.append(objects)
     return "Success"

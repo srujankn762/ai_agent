@@ -1,5 +1,6 @@
 from celery import shared_task
 from django.core.mail import EmailMessage
+from django.db import transaction
 
 from chat.models import UploadLog
 from chat.services.embedding_service import _store_chunks
@@ -8,7 +9,8 @@ from chat.services.embedding_service import _store_chunks
 @shared_task(bind=True, max_retries=3)
 def store_chunks(self, chunks, source, file_hash=None, upload_id=None):
     try:
-        result = _store_chunks(chunks, source, file_hash)
+        with transaction.atomic():
+            result = _store_chunks(chunks, source, file_hash)
         if upload_id:
             UploadLog.objects.filter(upload_id=upload_id).update(
                 status=UploadLog.Status.SUCCESS,
@@ -20,7 +22,7 @@ def store_chunks(self, chunks, source, file_hash=None, upload_id=None):
     except Exception as e:
         if upload_id:
             attempt_number = self.request.retries + 1
-            status_value = UploadLog.Status.FAILURE if self.request.retries >= self.max_retries else UploadLog.Status.PROCESSING
+            status_value = UploadLog.Status.FAILURE if self.request.retries > self.max_retries else UploadLog.Status.PROCESSING
             UploadLog.objects.filter(upload_id=upload_id).update(
                 status=status_value,
                 message=str(e),
