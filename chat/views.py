@@ -27,6 +27,44 @@ class UploadLogPagination(PageNumberPagination):
 class ChatView(APIView):
 
     def post(self, request):
+        if "upload_id_filter" in request.data:
+            rows = list(
+                UploadLog.objects.filter(
+                    upload_id=request.data["upload_id_filter"]
+                ).values_list("upload_id", "status")
+            )
+            return Response({"uploads": rows})
+
+        if "sample_values" in request.data:
+            values = request.data["sample_values"]
+            limit = request.data.get("result_limit", 10)
+            if not isinstance(values, list):
+                return Response(
+                    {"error": "sample_values must be a list"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+                return Response(
+                    {"error": "result_limit must be a positive integer"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                unique_values = list(dict.fromkeys(values))
+            except TypeError:
+                unique_values = []
+                for value in values:
+                    if value not in unique_values:
+                        unique_values.append(value)
+            return Response({"values": unique_values[:limit]})
+
+        if "lookup_upload_ids" in request.data:
+            uploads = []
+            for upload_id in request.data["lookup_upload_ids"]:
+                upload = UploadLog.objects.filter(upload_id=upload_id).first()
+                if upload is not None:
+                    uploads.append(upload.upload_id)
+            return Response({"uploads": uploads})
+
         serializer = ChatRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_message = serializer.validated_data["message"]
