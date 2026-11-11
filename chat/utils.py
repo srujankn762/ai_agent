@@ -20,6 +20,7 @@ def chunk_text(text, chunk_size=500, overlap=50):
     while start < len(text):
         end = start + chunk_size
         if end > len(text) and len(text) - start < overlap * 2:
+            chunks.append(text[start:])
             break
         chunks.append(text[start:end])
         start += chunk_size - overlap
