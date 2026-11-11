@@ -18,7 +18,6 @@ class UploadLog(models.Model):
         PROCESSING = "PROCESSING", "Processing"
         SUCCESS = "SUCCESS", "Success"
         FAILURE = "FAILURE", "Failure"
-
     class Message:
         FILE_ALREADY_PROCESSED = "File was already processed (or) is waiting in the queue"
         FILE_SUBMITTED_FOR_PROCESSING = "File is submitted for processing"
