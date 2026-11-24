@@ -10,7 +10,7 @@ from rich.json import JSON
 
 console = Console()
 
-SENSITIVE_KEYS = {"password", "token", "authorization", "access", "refresh"}
+SENSITIVE_KEYS = {"password", "token", "authorization", "access", "refresh", "kwt"}
 
 
 def mask_sensitive_data(data):
